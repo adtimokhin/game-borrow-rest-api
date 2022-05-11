@@ -15,6 +15,8 @@ const ini = require("ini"); // library to work with .ini files link: https://git
 
 const Response = require("../response.js");
 
+const emailSender = require("../utils/email/email-sender.js");
+
 const isTokenExpired = (oldDate) => {
   const timeNow = new Date().getTime();
   const timeCreated = oldDate;
@@ -34,17 +36,25 @@ module.exports.postSignUp = (req, res, next) => {
   const role = req.body.role;
 
   let emailVerificationToken;
+  let user;
 
   bcrypt
     .hash(password, 12)
     .then((encryptedPassword) => {
-      const user = new User(email, encryptedPassword, role);
+      user = new User(email, encryptedPassword, role);
       emailVerificationToken = user.emailVerification.tokenValue;
       return UserService.saveUser(user);
     })
     .then((result) => {
-
-      //TODO:send verification email
+      emailSender.sendHTMLTemplateEmail(
+        user.email,
+        "Email Verification",
+        "email-verification",
+        {
+          email: user.email,
+          token: emailVerificationToken,
+        }
+      );
 
       const response = new Response(201, "New user was added to the database", {
         user: { _id: result.insertedId },
@@ -176,13 +186,21 @@ module.exports.putPassswordUpdateVerificationToken = (req, res, next) => {
 
       return UserService.updateUser(user);
     })
-    .then((_) => {
+    .then((user) => {
       const response = new Response(
         204,
         "New password verification token was setted."
       );
 
-    // TODO: send password-update token
+      emailSender.sendHTMLTemplateEmail(
+        user.email,
+        "Resetting Password",
+        "password-reset",
+        {
+          email: user.email,
+          token: user.passwordToken,
+        }
+      );
 
       res.status(response.statusCode).json(response);
     })
@@ -218,7 +236,6 @@ module.exports.putPassswordUpdate = (req, res, next) => {
       updatedUser._id = user._id;
       updatedUser.email = user.email;
       updatedUser.role = user.role;
-      
 
       return bcrypt.hash(newPassword, 12);
     })
