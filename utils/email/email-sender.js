@@ -1,11 +1,11 @@
 const Response = require("../../response.js");
+const axios = require("axios").default;
+// const http = require("http");
 
-// const options = {
-//   hostname: "localhost",
-//   port: 8080,
-//   path: "/send/",
-//   method: "GET",
-// };
+const options = {
+  hostname: "http://localhost",
+  port: process.env.EMAIL_PORT || 4129, // TODO: add this as an env variable to the Dockerfile
+};
 
 /**
  * Makes an API request that sends a simple text SMTP email to users mentioned.
@@ -18,7 +18,20 @@ const Response = require("../../response.js");
  */
 module.exports.sendTextEmail = (recepients, subject, text) => {
   //TODO: parse recepeints as a list!
-  // TODO: make this method!
+  axios
+    .get(`${options.hostname}:${options.port}/send/simple`, {
+      data: {
+        to: recepients,
+        subject: subject,
+        text: text,
+      },
+    })
+    .then((result) => {
+      const response = result.data;
+    })
+    .catch((err) => {
+      console.log("err :>> ", err);
+    });
 };
 
 /**
@@ -37,6 +50,21 @@ module.exports.sendHTMLTemplateEmail = (
   template,
   data
 ) => {
-    //TODO: parse recepeints as a list!
-  // TODO: make this method!
+  //TODO: parse recepeints as a list!
+  axios
+    .get(`${options.hostname}:${options.port}/send/template`, {
+      data: {
+        to: recepients,
+        subject: subject,
+        template: template,
+        data: data,
+      },
+    })
+    .then((result) => {
+      const response = result.data;
+      console.log('response :>> ', response);
+    })
+    .catch((err) => {
+      console.log("err :>> ", err);
+    });
 };
