@@ -37,7 +37,7 @@ module.exports.sendTextEmail = (recepients, subject, text) => {
 /**
  * Makes an API request that sends an HTML email to recepeints.
  *
- * @param {Array} recepients array of Strings that indicate emails to which a certain text message should be sent
+ * @param {String[]} recepients array of Strings that indicate emails to which a certain text message should be sent
  * @param {String} subject a subject of email
  * @param {String} template matches one of template names. Default ones are mentioned here: https://github.com/adtimokhin/game-borrow-email/tree/main/email-templates
  * @param {Object} data additional data that will be used to populate fields in the template. The keys must match the values in the '${}' syntax in the template
@@ -62,7 +62,7 @@ module.exports.sendHTMLTemplateEmail = (
     })
     .then((result) => {
       const response = result.data;
-      console.log('response :>> ', response);
+      console.log("response :>> ", response);
     })
     .catch((err) => {
       console.log("err :>> ", err);

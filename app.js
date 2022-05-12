@@ -10,6 +10,7 @@ const isAuth = require("./middlewares/is-auth.js").isAuth;
 
 // Routes
 const userRouter = require("./routes/user.js");
+const gameRouter = require("./routes/game.js");
 
 // Creating a new JWT secret to use before the launch of the application.
 const config = ini.parse(fs.readFileSync("./properties/config.ini", "utf-8")); // opening connection with a file that constains configuartion information.
@@ -20,6 +21,7 @@ fs.writeFileSync("./properties/config.ini", ini.stringify(config));
 // Setting deault settings for the routes in the application
 app.use(bodyParser.json());
 
+// Setting deafult headers to requests
 app.use((req, res, next) => {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader(
@@ -32,8 +34,9 @@ app.use((req, res, next) => {
 
 // Setting the routes
 app.use(config.default.apiRoute, userRouter);
-// app.use(config.default.apiRoute, isAuth, bookingRouter);
+app.use(config.default.apiRoute, isAuth, gameRouter);
 
+//Default error-handling route
 app.use((err, req, res, next) => {
   console.log("err :>> ", err);
   const status = err.statusCode || 500;

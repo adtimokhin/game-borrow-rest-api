@@ -3,7 +3,7 @@ const getDb = require("../utils/databse").getDb;
 
 module.exports.saveUser = (user) => {
   // adds user to the database
-  return getDb().collection("users").insertOne(user); // todo: add a validation middleware.
+  return getDb().collection("users").insertOne(user);
 };
 
 module.exports.findUserByEmail = (email) => {
