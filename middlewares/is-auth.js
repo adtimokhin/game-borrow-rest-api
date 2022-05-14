@@ -8,7 +8,13 @@ const throwInvalidJWTError = (statusCode = 500) => {
   throw error;
 };
 
-// This funnction checks the headers to find the 'Authorization' header. It will then determine whether the JWT passed is valid.
+/**
+ * This funnction checks the headers to find the 'Authorization' header. It will then determine whether the JWT passed is valid.
+ *
+ * @param {*} req
+ * @param {*} res
+ * @param {*} next
+ */
 module.exports.isAuth = (req, res, next) => {
   const authHeader = req.get("Authorization");
 
@@ -33,3 +39,5 @@ module.exports.isAuth = (req, res, next) => {
   }
   next();
 };
+
+module.exports.throwInvalidJWTError = throwInvalidJWTError;

@@ -53,3 +53,12 @@ module.exports.updateGame = (game) => {
     .collection(GAMES_COLLECTION)
     .updateOne({ _id: new ObjectId(game._id) }, { $set: game });
 };
+
+/**
+ * Finds a game by title. Title must be unique
+ * @param {String} title title of a game
+ * @returns
+ */
+module.exports.getGameByTitle = (title) => {
+  return getDb().collection(GAMES_COLLECTION).findOne({ title: title });
+};

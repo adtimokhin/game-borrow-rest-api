@@ -260,3 +260,5 @@ module.exports.putPassswordUpdate = (req, res, next) => {
       next(err);
     });
 };
+
+// TODO: Make it only possible for user to update their own user entity
