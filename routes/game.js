@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
 
-const isPublisher = require("../middlewares/is-publisher.js");
+const isPublisher = require("../middlewares/is-publisher.js").isPublisher;
 
 const { body, param } = require("express-validator");
 

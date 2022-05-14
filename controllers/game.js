@@ -14,16 +14,15 @@ const emailSender = require("../utils/email/email-sender.js");
  * @param {*} res
  * @param {*} next
  */
-module.exports.getAllGames = (req, res, next) => {
-  gameService
-    .getAllGames()
-    .then((games) => {
-      const response = new Response(200, "Data was fetched", games);
-      res.status(response.statusCode).json(response);
-    })
-    .catch((err) => {
-      next(err);
-    });
+module.exports.getAllGames = async (req, res, next) => {
+  try {
+    const games = await gameService.getAllGames();
+    const response = new Response(200, "Data was fetched", games);
+    res.status(response.statusCode).json(response);
+  } catch (error) {
+    error.statusCode = 500;
+    next(error);
+  }
 };
 
 /**
@@ -33,25 +32,24 @@ module.exports.getAllGames = (req, res, next) => {
  * @param {*} res
  * @param {*} next
  */
-module.exports.getGameById = (req, res, next) => {
+module.exports.getGameById = async (req, res, next) => {
   checkForValidationErrors(req);
   const gameId = req.params.gameId;
-  // TODO: add validation of gameId format????
-  gameService
-    .getGameById(gameId)
-    .then((game) => {
-      if (game) {
-        // If game is not null:
-        const response = new Response(200, "Data was fetched", game);
-        res.status(response.statusCode).json(response);
-      } else {
-        const response = new Response(204, "Game is not found");
-        res.status(response.statusCode).json(response);
-      }
-    })
-    .catch((err) => {
-      next(err);
-    });
+
+  try {
+    const game = await gameService.getGameById(gameId);
+    if (game) {
+      // If game is not null:
+      const response = new Response(200, "Data was fetched", game);
+      res.status(response.statusCode).json(response);
+    } else {
+      const response = new Response(204, "Game is not found");
+      res.status(response.statusCode).json(response);
+    }
+  } catch (err) {
+    err.statusCode = 500;
+    next(err);
+  }
 };
 
 /**

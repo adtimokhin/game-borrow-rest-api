@@ -2,9 +2,9 @@ const jwt = require("jsonwebtoken");
 const getJWTSecret = require("../utils/jwt-security.js").getJWTSecret;
 
 const throwInvalidJWTError = (statusCode = 500) => {
-  const error = new Error("Invalid JWT token.");
+  const error = new Error("Invalid JWT token");
   error.statusCode = statusCode;
-  error.message = "Invalid JWT token.";
+  error.message = "Invalid JWT token";
   throw error;
 };
 
@@ -37,6 +37,8 @@ module.exports.isAuth = (req, res, next) => {
   if (!decodedToken) {
     throwInvalidJWTError(401);
   }
+
+  req.userId = decodedToken.userId;
   next();
 };
 
