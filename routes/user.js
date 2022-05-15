@@ -55,7 +55,6 @@ router.get(
   controller.getLogin
 );
 
-
 // /user/verified/:token
 router.put(
   "/user/verified/:token",
@@ -66,7 +65,7 @@ router.put(
 // /password-token
 router.put(
   "/password-token",
-  [body("email").not().isEmpty().withMessage("Email must be specified.")],
+  [body("email").isEmail().withMessage("Email must be specified.")],
   controller.putPassswordUpdateVerificationToken
 );
 

@@ -47,3 +47,34 @@ module.exports.updatePublisher = (publisher) => {
     .collection(PUBLISHERS_COLLECTION)
     .updateOne({ _id: new ObjectId(publisher._id) }, { $set: publisher });
 };
+
+/**
+ * Adds a new game to publisher
+ * @param {String} publisherId Publisher's id
+ * @param {String} gameId new Game's id
+ * @returns
+ */
+module.exports.addGameToPublisher = (publisherId, gameId) => {
+  return getDb()
+    .collection(PUBLISHERS_COLLECTION)
+    .updateOne(
+      { _id: new ObjectId(publisherId) },
+      { $push: { games: gameId } }
+    );
+};
+
+/**
+ * Removes a new game to publisher
+ * 
+ * @param {String} publisherId Publisher's id
+ * @param {String} gameId new Game's id
+ * @returns
+ */
+module.exports.removeGameFromPublisher = (publisherId, gameId) => {
+  return getDb()
+    .collection(PUBLISHERS_COLLECTION)
+    .updateOne(
+      { _id: new ObjectId(publisherId) },
+      { $pull: { games: gameId } }
+    );
+};

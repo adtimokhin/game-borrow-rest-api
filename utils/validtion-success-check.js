@@ -16,6 +16,6 @@ module.exports = checkForValidationErrors = (
     err.statusCode = 422;
     err.data = errors.array();
 
-    throw err;
+   throw err
   }
 };

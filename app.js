@@ -6,17 +6,18 @@ const bodyParser = require("body-parser");
 const app = express();
 
 const database = require("./utils/databse.js");
-const isAuth = require("./middlewares/is-auth.js").isAuth;
+const { isAuth } = require("./middlewares/is-auth.js");
 
 // Routes
 const userRouter = require("./routes/user.js");
 const gameRouter = require("./routes/game.js");
 
 // Creating a new JWT secret to use before the launch of the application.
+//TODO:Enable later
 const config = ini.parse(fs.readFileSync("./properties/config.ini", "utf-8")); // opening connection with a file that constains configuartion information.
-const generateJWTSecret = require("./utils/jwt-security.js").generateJWTSecret;
-config.jwt.secret = generateJWTSecret();
-fs.writeFileSync("./properties/config.ini", ini.stringify(config));
+// const generateJWTSecret = require("./utils/jwt-security.js").generateJWTSecret;
+// config.jwt.secret = generateJWTSecret();
+// fs.writeFileSync("./properties/config.ini", ini.stringify(config));
 
 // Setting deault settings for the routes in the application
 app.use(bodyParser.json());

@@ -28,237 +28,218 @@ const isTokenExpired = (oldDate) => {
 };
 
 // Adds the user to the databse. This method will encrypt the password. This method assusmes that all appropriate validdations are carried out by the middleware.
-module.exports.postSignUp = (req, res, next) => {
-  checkForValidationErrors(req, "Invalid data is inputted.");
+module.exports.postSignUp = async (req, res, next) => {
 
-  const email = req.body.email;
-  const password = req.body.password;
-  const role = req.body.role;
 
   let emailVerificationToken;
-  let user;
+  try {
 
-  bcrypt
-    .hash(password, 12)
-    .then((encryptedPassword) => {
-      user = new User(email, encryptedPassword, role);
-      emailVerificationToken = user.emailVerification.tokenValue;
-      return UserService.saveUser(user);
-    })
-    .then((result) => {
-      emailSender.sendHTMLTemplateEmail(
-        user.email,
-        "Email Verification",
-        "email-verification",
-        {
-          email: user.email,
-          token: emailVerificationToken,
-        }
-      );
+    checkForValidationErrors(req ,"Invalid data is inputted.");
 
-      const response = new Response(201, "New user was added to the database", {
-        user: { _id: result.insertedId },
-      });
-      res.status(response.statusCode).json(response);
-    })
-    .catch((err) => {
-      next(err);
+    const email = req.body.email;
+    const password = req.body.password;
+    const role = req.body.role;
+
+    const encryptedPassword = await bcrypt.hash(password, 12);
+    const user = new User(email, encryptedPassword, role);
+    const result = await UserService.saveUser(user);
+    emailSender.sendHTMLTemplateEmail(
+      user.email,
+      "Email Verification",
+      "email-verification",
+      {
+        email: user.email,
+        token: emailVerificationToken,
+      }
+    );
+    const response = new Response(201, "New user was added to the database", {
+      user: { _id: result.insertedId },
     });
+
+    res.status(response.statusCode).json(response);
+  } catch (err) {
+    next(err);
+  }
 };
 
 // Returns a JWT token if the user is permitted to log in to the application.
-module.exports.getLogin = (req, res, next) => {
-  checkForValidationErrors(req);
+module.exports.getLogin = async (req, res, next) => {
+  try {
+    checkForValidationErrors(req);
 
-  const email = req.body.email;
-  const password = req.body.password;
+    const email = req.body.email;
+    const password = req.body.password;
+    const user = await UserService.findUserByEmail(email);
+    if (!user) {
+      const err = new Error("Invalid credentials");
+      err.statusCode = 401;
+      throw err;
+    }
 
-  let fetchedUser;
+    const match = await bcrypt.compare(password, user.password);
+    if (!match) {
+      const err = new Error("Invalid credentials");
+      err.statusCode = 401;
+      throw err;
+    }
 
-  UserService.findUserByEmail(email)
-    .then((user) => {
-      if (!user) {
-        const err = new Error("Invalid credentials");
-        err.statusCode = 401;
-        throw err;
-      }
+    if (!user.verified) {
+      const err = new Error("Must verify email first.");
+      err.statusCode = 422;
+      throw err;
+    }
 
-      fetchedUser = user;
+    // return to the user a JWT token if validations have been successful.
+    const token = jwt.sign(
+      {
+        userId: user._id,
+      },
+      getJWTSecret(),
+      { expiresIn: "1h" }
+    );
 
-      return bcrypt.compare(password, user.password);
-    })
-    .then((match) => {
-      if (!match) {
-        const err = new Error("Invalid credentials");
-        err.statusCode = 401;
-        throw err;
-      }
-
-      if (!fetchedUser.verified) {
-        const err = new Error("Must verify email first.");
-        err.statusCode = 422;
-        throw err;
-      }
-
-      // return to the user a JWT token if validations have been successful.
-      const token = jwt.sign(
-        {
-          userId: fetchedUser._id,
-        },
-        getJWTSecret(),
-        { expiresIn: "1h" }
-      );
-
-      const response = new Response(200, "User was verified", {
-        token: token,
-      });
-
-      res.status(response.statusCode).json(response);
-    })
-    .catch((err) => {
-      next(err);
+    const response = new Response(200, "User was verified", {
+      token: token,
     });
+
+    res.status(response.statusCode).json(response);
+  } catch (err) {
+    next(err);
+  }
 };
 
 // This method will update user's verification status (remove the correcsponding field form the object) if the email token passed matches the one that was setted when the userr was added to the database
-module.exports.putVerificationStatus = (req, res, next) => {
-  checkForValidationErrors(req);
+module.exports.putVerificationStatus = async (req, res, next) => {
+  try {
+    checkForValidationErrors(req);
 
-  const token = req.params.token;
+    const token = req.params.token;
+    const user = await UserService.findByEmailVerificationToken(token);
+    if (!user) {
+      const err = new Error("Invalid token.");
+      err.statusCode = 401;
+      throw err;
+    }
 
-  UserService.findByEmailVerificationToken(token)
-    .then((user) => {
-      if (!user) {
-        const err = new Error("Invalid token.");
-        err.statusCode = 401;
-        throw err;
-      }
+    let updatedUser = {};
 
-      let updatedUser = {};
+    updatedUser._id = user._id;
+    updatedUser.email = user.email;
+    updatedUser.password = user.password;
+    updatedUser.role = user.role;
+    updatedUser.verified = true;
 
-      updatedUser._id = user._id;
-      updatedUser.email = user.email;
-      updatedUser.password = user.password;
-      updatedUser.role = user.role;
-      updatedUser.verified = true;
+    await UserService.replaceUser(updatedUser);
 
-      return UserService.replaceUser(updatedUser);
-    })
-    .then((_) => {
-      const response = new Response(204, "User was verificated");
+    const response = new Response(204, "User was verificated");
 
-      res.status(response.statusCode).json(response);
-    })
-    .catch((err) => {
-      next(err);
-    });
+    res.status(response.statusCode).json(response);
+  } catch (err) {
+    next(err);
+  }
 };
 
 // This method will set a new password verification token if none was set or if the token has expired. If the token is still valid an error would be thrown.
-module.exports.putPassswordUpdateVerificationToken = (req, res, next) => {
-  checkForValidationErrors(req, "Email must be provided.");
+module.exports.putPassswordUpdateVerificationToken = async (req, res, next) => {
+  try {
 
-  const email = req.body.email;
-  let passwordToken;
+    checkForValidationErrors(req, "Email must be provided.");
 
-  UserService.findUserByEmail(email)
-    .then((user) => {
-      if (!user) {
-        const err = new Error("No user with such email was foud.");
+    const email = req.body.email;
+    let passwordToken;
+
+    const user = await UserService.findUserByEmail(email);
+
+    if (!user) {
+      const err = new Error("No user with such email was foud.");
+      err.statusCode = 422;
+      throw err;
+    }
+
+    if (!user.verified) {
+      const err = new Error("Email not verified");
+      err.statusCode = 401;
+      throw err;
+    }
+
+    if (user.passwordToken) {
+      if (isTokenExpired(user.passwordToken.created.getTime())) {
+        // If time difference is > 5h
+        delete user.passwordToken;
+      } else {
+        const err = new Error("Token has not yet expired.");
         err.statusCode = 422;
         throw err;
       }
+    }
 
-      if (user.passwordToken) {
-        if (isTokenExpired(user.passwordToken.created.getTime())) {
-          // If time difference is > 5h
-          delete user.passwordToken;
-        } else {
-          const err = new Error("Token has not yet expired.");
-          err.statusCode = 422;
-          throw err;
-        }
+    // assigning a new token.
+    passwordToken = generateToken();
+    user.passwordToken = new UserToken(passwordToken);
+
+    await UserService.updateUser(user);
+
+    const response = new Response(
+      204,
+      "New password verification token was setted."
+    );
+
+    emailSender.sendHTMLTemplateEmail(
+      user.email,
+      "Resetting Password",
+      "password-reset",
+      {
+        email: user.email,
+        token: user.passwordToken.tokenValue,
       }
+    );
 
-      // assigning a new token.
-      passwordToken = generateToken();
-      user.passwordToken = new UserToken(passwordToken);
-
-      return UserService.updateUser(user);
-    })
-    .then((user) => {
-      const response = new Response(
-        204,
-        "New password verification token was setted."
-      );
-
-      emailSender.sendHTMLTemplateEmail(
-        user.email,
-        "Resetting Password",
-        "password-reset",
-        {
-          email: user.email,
-          token: user.passwordToken,
-        }
-      );
-
-      res.status(response.statusCode).json(response);
-    })
-    .catch((err) => {
-      next(err);
-    });
+    res.status(response.statusCode).json(response);
+  } catch (err) {
+    next(err);
+  }
 };
 
 // This method will update user's password.
-module.exports.putPassswordUpdate = (req, res, next) => {
-  checkForValidationErrors(req);
+module.exports.putPassswordUpdate = async (req, res, next) => {
+  try {
+    checkForValidationErrors(req);
 
-  const token = req.params.token;
-  const newPassword = req.body.password;
+    const token = req.params.token;
+    const newPassword = req.body.password;
+    let fail = false
 
-  let updatedUser = {};
-  let fail = false;
+    const user = await UserService.findUserByPasswordToken(token);
+    if (!user) {
+      const err = new Error("Invalid token.");
+      err.statusCode = 401;
+      throw err;
+    }
 
-  UserService.findUserByPasswordToken(token)
-    .then((user) => {
-      if (!user) {
-        const err = new Error("Invalid token.");
-        err.statusCode = 401;
-        throw err;
-      }
+    if (isTokenExpired(user.passwordToken.created)) {
+      delete user.passwordToken;
+      fail = true;
+      return UserService.replaceUser(user);
+    }
 
-      if (isTokenExpired(user.passwordToken.created)) {
-        delete user.passwordToken;
-        fail = true;
-        return UserService.replaceUser(user);
-      }
+    const result = await bcrypt.hash(newPassword, 12);
 
-      updatedUser._id = user._id;
-      updatedUser.email = user.email;
-      updatedUser.role = user.role;
+    if (fail) {
+      // password verification token has expired.
+      const err = new Error("Token has expired.");
+      err.statusCode = 402;
+      throw err;
+    }
 
-      return bcrypt.hash(newPassword, 12);
-    })
-    .then((result) => {
-      if (fail) {
-        // password verification token has expired.
-        const err = new Error("Token has expired.");
-        err.statusCode = 402;
-        throw err;
-      }
+    user.password = result;
+    await UserService.updateUser(user);
 
-      // else, we receive the success of the hashing.
-      updatedUser.password = result;
-      return UserService.replaceUser(updatedUser);
-    })
-    .then((_) => {
-      const response = new Response(204, "User was verificated");
+    const response = new Response(204, "User was verificated");
 
-      res.status(response.statusCode).json(response);
-    })
-    .catch((err) => {
-      next(err);
-    });
+    res.status(response.statusCode).json(response);
+  } catch (err) {
+    next(err);
+  }
 };
 
 // TODO: Make it only possible for user to update their own user entity

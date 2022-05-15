@@ -1,8 +1,6 @@
 const express = require("express");
 const router = express.Router();
 
-const isPublisher = require("../middlewares/is-publisher.js").isPublisher;
-
 const { body, param } = require("express-validator");
 
 const controller = require("../controllers/game.js");
@@ -29,11 +27,11 @@ router.post(
     body("title").isString().withMessage("must be string value"),
     body("title")
       .isLength({ min: 3 })
-      .withMessage("Minimal length is 3 characters"),
-    body("title").custom((value, { req }) => {
-      gameService.getGameByTitle(value).then((game) => {
+      .withMessage("minimum length is 3 characters"),
+    body("title").custom((value) => {
+      return gameService.getGameByTitle(value).then((game) => {
         if (game) {
-          Promise.reject("Game with this name already exists");
+          return Promise.reject("Game with this name already exists");
         }
       });
     }),
@@ -44,11 +42,23 @@ router.post(
     body("filesLocation").not().isEmpty().withMessage("Cannot be empty"),
     body("imageURIs").isArray().withMessage("Must be array"),
     body("imageURIs").custom((value, { req }) => {
-      if (value.length < 1) {
+      if (!(typeof value === "array" || value instanceof Array)) {
+        return Promise.reject("Must be an array");
+      }
+
+      var i = 0;
+      for (i; i < value.length; i++) {
+        const imageURI = value[i];
+        if (!(typeof imageURI === "string" || imageURI instanceof String)) {
+          return Promise.reject("Must contain only strings");
+        }
+      }
+      if (i == 0) {
         return Promise.reject("Must contain at least one image URI");
       }
+
+      return true
     }),
-    isPublisher,
   ],
   controller.postGame
 );
@@ -57,10 +67,7 @@ router.post(
 // /game/:gameId
 router.delete(
   "/game/:gameId",
-  [
-    param("gameId").not().isEmpty().withMessage("game id must be specified"),
-    isPublisher,
-  ],
+  [param("gameId").not().equals("").withMessage("game id must be specified")],
   controller.deleteGame
 );
 
@@ -69,45 +76,60 @@ router.delete(
 router.patch(
   "/game/:gameId",
   [
-    param("gameId").not().isEmpty().withMessage("cannot be empty"),
     body("title").custom((value, { req }) => {
-      if (value) {
+      if (value !== undefined) {
         if (!(typeof value === "string" || value instanceof String)) {
-          Promise.reject("must be string value");
+          return Promise.reject("must be string value");
         }
         if (value.length < 3) {
-          Promise.reject("Minimal length is 3 characters");
+          return Promise.reject("Minimal length is 3 characters");
         }
       }
+      return true;
     }),
     body("description").custom((value, { req }) => {
-      if (value) {
+      if (value !== undefined) {
         if (!(typeof value === "string" || value instanceof String)) {
-          Promise.reject("must be string value");
+          return Promise.reject("must be a string value");
         }
         if (value.length < 20) {
-          Promise.reject("Minimal length is 20 characters");
+          return Promise.reject("Minimal length is 20 characters");
         }
       }
+      return true;
     }),
     body("filesLocation").custom((value, { req }) => {
-      if (value) {
+      if (value !== undefined) {
+        if (!(typeof value === "string" || value instanceof String)) {
+          return Promise.reject("must be a string value");
+        }
+
         if (value == "") {
-          Promise.reject("cannot be empty");
+          return Promise.reject("cannot be empty");
         }
       }
+      return true;
     }),
     body("imageURIs").custom((value, { req }) => {
-      if (value) {
+      if (value !== undefined) {
         if (!(typeof value === "array" || value instanceof Array)) {
-          Promise.reject("Must be an array");
+          return Promise.reject("Must be an array");
         }
-        if (value.length < 1) {
-          Promise.reject("Must contain at least one image URI");
+
+        var i = 0;
+        for (i; i < value.length; i++) {
+          const imageURI = value[i];
+          if (!(typeof imageURI === "string" || imageURI instanceof String)) {
+            return Promise.reject("Must contain only strings");
+          }
+        }
+        if (i == 0) {
+          return Promise.reject("Must contain at least one image URI");
         }
       }
+
+      return true;
     }),
-    isPublisher,
   ],
   controller.patchGame
 );
