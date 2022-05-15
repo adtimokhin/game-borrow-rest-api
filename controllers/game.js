@@ -212,7 +212,7 @@ module.exports.postGame = async (req, res, next) => {
       }
     );
 
-    const response = new Response(204, "User was verificated");
+    const response = new Response(204, "Game added to database");
 
     res.status(response.statusCode).json(response);
   } catch (err) {

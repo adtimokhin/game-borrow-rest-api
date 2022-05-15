@@ -18,10 +18,10 @@ module.exports.findByEmailVerificationToken = (token) => {
 };
 
 module.exports.findUserByPasswordToken = (token) => {
-    return getDb()
-      .collection("users")
-      .findOne({ "passwordToken.tokenValue": token });
-  };
+  return getDb()
+    .collection("users")
+    .findOne({ "passwordToken.tokenValue": token });
+};
 
 module.exports.replaceUser = (user) => {
   // Replaces user. The passed user must be already stored in the database and their _id must not be changed.
@@ -35,4 +35,14 @@ module.exports.updateUser = (user) => {
   return getDb()
     .collection("users")
     .updateOne({ _id: new ObjectId(user._id) }, { $set: user });
+};
+
+/**
+ *
+ * @param {String} userId
+ */
+module.exports.findUserById = (userId) => {
+  return getDb()
+    .collection("users")
+    .findOne({ _id: new ObjectId(userId) });
 };

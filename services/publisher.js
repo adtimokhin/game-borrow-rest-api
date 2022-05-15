@@ -65,7 +65,7 @@ module.exports.addGameToPublisher = (publisherId, gameId) => {
 
 /**
  * Removes a new game to publisher
- * 
+ *
  * @param {String} publisherId Publisher's id
  * @param {String} gameId new Game's id
  * @returns
@@ -77,4 +77,23 @@ module.exports.removeGameFromPublisher = (publisherId, gameId) => {
       { _id: new ObjectId(publisherId) },
       { $pull: { games: gameId } }
     );
+};
+
+/**
+ *
+ * @param {Srting} publisherId
+ * @param {String} userEmail
+ * @returns
+ */
+module.exports.addUserToPublisher = (publisherId, userEmail) => {
+  return getDb()
+    .collection(PUBLISHERS_COLLECTION)
+    .updateOne(
+      { _id: new ObjectId(publisherId) },
+      { $push: { users: userEmail } }
+    );
+};
+
+module.exports.getPublisherByName = (name) => {
+  return getDb().collection(PUBLISHERS_COLLECTION).findOne({ name: name });
 };

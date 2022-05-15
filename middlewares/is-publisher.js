@@ -1,4 +1,5 @@
 const publisherService = require("../services/publisher.js");
+const userService = require("../services/user.js");
 
 const throwInvalidJWTError = require("./is-auth.js").throwInvalidJWTError;
 
@@ -15,6 +16,8 @@ const throwInvalidJWTError = require("./is-auth.js").throwInvalidJWTError;
 const isPublisher = async (req, res, next) => {
   const gameId = req.params.gameId;
   const userId = req.userId;
+
+  const user = await userService.findUserById(userId);
   if (gameId) {
     const publisher = await publisherService.getPublisherByGameId(gameId);
     if (!publisher) {
@@ -23,7 +26,7 @@ const isPublisher = async (req, res, next) => {
       throw err;
     }
 
-    if (!publisher.users.includes(String(userId))) {
+    if (!publisher.users.includes(user.email)) {
       //           // JWT contains a user Id that is not assosciated with a given publisher
       throwInvalidJWTError(401);
     }
@@ -42,7 +45,7 @@ const isPublisher = async (req, res, next) => {
       err.statusCode = 400;
       throw err;
     }
-    if (!publisher.users.includes(String(userId))) {
+    if (!publisher.users.includes(user.email)) {
       //           // JWT contains a user Id that is not assosciated with a given publisher
       throwInvalidJWTError(401);
     }
