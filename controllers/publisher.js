@@ -46,7 +46,7 @@ module.exports.patchPublisher = async (req, res, next) => {
   try {
     checkForValidationErrors(req);
 
-    const publisherId = req.params.publisherId;
+    const publisherId = req.body.publisherId;
     const name = req.body.name;
     const email = req.body.email;
     const website = req.body.website;
@@ -106,14 +106,15 @@ module.exports.patchPublisher = async (req, res, next) => {
   }
 };
 
-
 module.exports.patchPublisherAddUser = async (req, res, next) => {
-  const userEmail = req.body.email;
-  const publisherId = req.params.publisherId;
+  const userEmail = req.body.userEmail;
+  const publisherId = req.body.publisherId;
 
   try {
+    checkForValidationErrors(req);
     await isPublisher(req, res, next);
     const publisher = await publisherService.getPublisherById(publisherId);
+
     if (!publisher) {
       const response = new Response(400, "no publisher is found");
       res.status(response.statusCode).json(response);
@@ -151,12 +152,37 @@ module.exports.patchPublisherAddUser = async (req, res, next) => {
 
 module.exports.postPublisher = async (req, res, next) => {
   try {
-    //name, website, email, users, games, id
+    checkForValidationErrors(req);
+
     const name = req.body.name;
     const website = req.body.website;
     const email = req.body.email;
     const users = req.body.users; // must contain at least one user
     const games = []; //initially no games are associated with any publisher
+
+    const unverifiedUsers = [];
+
+    for (var i = 0; i < users.length; i++) {
+      const user = await UserService.findUserByEmail(users[i]);
+      if (!user.verified) {
+        unverifiedUsers.push(users[i]);
+      }
+
+      const publihser = await publisherService.getPublisherByUserEmail(
+        users[i]
+      );
+      if (publihser) {
+        unverifiedUsers.push(users[i]);
+      }
+    }
+
+    if (unverifiedUsers.length != 0) {
+      const err = new Error(
+        `These emails are either not registered, not verified, or used with other publisher : ${unverifiedUsers}`
+      );
+      err.statusCode = 400;
+      throw err;
+    }
 
     const publihser = new Publisher(name, website, email, users, games);
 

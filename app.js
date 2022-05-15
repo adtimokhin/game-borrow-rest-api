@@ -11,6 +11,7 @@ const { isAuth } = require("./middlewares/is-auth.js");
 // Routes
 const userRouter = require("./routes/user.js");
 const gameRouter = require("./routes/game.js");
+const publihserRouter = require("./routes/publisher.js");
 
 // Creating a new JWT secret to use before the launch of the application.
 //TODO:Enable later
@@ -36,6 +37,7 @@ app.use((req, res, next) => {
 // Setting the routes
 app.use(config.default.apiRoute, userRouter);
 app.use(config.default.apiRoute, isAuth, gameRouter);
+app.use(config.default.apiRoute, isAuth, publihserRouter);
 
 //Default error-handling route
 app.use((err, req, res, next) => {

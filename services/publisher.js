@@ -97,3 +97,12 @@ module.exports.addUserToPublisher = (publisherId, userEmail) => {
 module.exports.getPublisherByName = (name) => {
   return getDb().collection(PUBLISHERS_COLLECTION).findOne({ name: name });
 };
+
+
+module.exports.getPublisherByEmail = (email) => {
+  return getDb().collection(PUBLISHERS_COLLECTION).findOne({ email: email });
+}
+
+module.exports.getPublisherByUserEmail = (email) => {
+  return getDb().collection(PUBLISHERS_COLLECTION).findOne({ users: email });
+}
